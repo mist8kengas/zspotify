@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from librespot.audio.decoders import VorbisOnlyAudioQuality
@@ -7,6 +8,7 @@ from tqdm import tqdm
 from const import NAME, ERROR, SHOW, ITEMS, ID, ROOT_PODCAST_PATH, CHUNK_SIZE
 from utils import sanitize_data, create_download_directory, MusicFormat
 from zspotify import ZSpotify
+
 
 EPISODE_INFO_URL = 'https://api.spotify.com/v1/episodes'
 SHOWS_URL = 'https://api.spotify.com/v1/shows'
@@ -21,11 +23,16 @@ def get_episode_info(episode_id_str) -> tuple[Optional[str], Optional[str]]:
 
 def get_show_episodes(show_id_str) -> list:
     episodes = []
+    offset = 0
+    limit = 50
 
-    resp = ZSpotify.invoke_url(f'{SHOWS_URL}/{show_id_str}/episodes')
-
-    for episode in resp[ITEMS]:
-        episodes.append(episode[ID])
+    while True:
+        resp = ZSpotify.invoke_url_with_params(f'{SHOWS_URL}/{show_id_str}/episodes', limit=limit, offset=offset)
+        offset += limit
+        for episode in resp[ITEMS]:
+            episodes.append(episode[ID])
+        if len(resp[ITEMS]) < limit:
+            break
 
     return episodes
 
@@ -43,10 +50,11 @@ def download_episode(episode_id) -> None:
         episode_id = EpisodeId.from_base62(episode_id)
         stream = ZSpotify.get_content_stream(episode_id, ZSpotify.DOWNLOAD_QUALITY)
 
-        create_download_directory(ZSpotify.get_config(ROOT_PODCAST_PATH) + extra_paths)
+        download_directory = os.path.dirname(__file__) + ZSpotify.get_config(ROOT_PODCAST_PATH) + extra_paths
+        create_download_directory(download_directory)
 
         total_size = stream.input_stream.size
-        with open(ZSpotify.get_config(ROOT_PODCAST_PATH) + extra_paths + filename + MusicFormat.WAV.value,
+        with open(download_directory + filename + MusicFormat.OGG.value,
                   'wb') as file, tqdm(
                 desc=filename,
                 total=total_size,
@@ -59,6 +67,4 @@ def download_episode(episode_id) -> None:
                     stream.input_stream.stream().read(ZSpotify.get_config(CHUNK_SIZE))))
 
         # convert_audio_format(ROOT_PODCAST_PATH +
-        #                     extra_paths + filename + '.wav')
-
-        # related functions that do stuff with the spotify API
+        #                     extra_paths + filename + '.ogg')
