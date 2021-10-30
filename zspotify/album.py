@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 from const import ITEMS, ARTISTS, NAME, ID
 from track import download_track
-from utils import sanitize_data
+from utils import fix_filename
 from zspotify import ZSpotify
 
 ALBUM_URL = 'https://api.spotify.com/v1/albums'
@@ -28,7 +28,7 @@ def get_album_tracks(album_id):
 def get_album_name(album_id):
     """ Returns album name """
     resp = ZSpotify.invoke_url(f'{ALBUM_URL}/{album_id}')
-    return resp[ARTISTS][0][NAME], sanitize_data(resp[NAME])
+    return resp[ARTISTS][0][NAME], fix_filename(resp[NAME])
 
 
 def get_artist_albums(artist_id):
@@ -47,9 +47,11 @@ def get_artist_albums(artist_id):
 def download_album(album):
     """ Downloads songs from an album """
     artist, album_name = get_album_name(album)
+    artist_fixed = fix_filename(artist)
+    album_name_fixed = fix_filename(album_name)
     tracks = get_album_tracks(album)
     for n, track in tqdm(enumerate(tracks, start=1), unit_scale=True, unit='Song', total=len(tracks)):
-        download_track(track[ID], f'{artist}/{album_name}',
+        download_track(track[ID], f'{artist_fixed}/{album_name_fixed}',
                        prefix=True, prefix_value=str(n), disable_progressbar=True)
 
 
