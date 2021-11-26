@@ -35,7 +35,7 @@ class ZSpotify:
     def login(cls):
         """ Authenticates with Spotify and saves credentials to a file """
 
-        cred_location = os.path.join(os.getcwd(), Config.get_credentials_location())
+        cred_location = Config.get_credentials_location()
 
         if os.path.isfile(cred_location):
             try:
@@ -86,7 +86,8 @@ class ZSpotify:
     @classmethod
     def invoke_url(cls, url):
         headers = cls.get_auth_header()
-        return requests.get(url, headers=headers).json()
+        response = requests.get(url, headers=headers)
+        return response.text, response.json()
 
     @classmethod
     def check_premium(cls) -> bool:
