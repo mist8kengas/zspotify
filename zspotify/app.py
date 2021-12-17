@@ -48,7 +48,7 @@ def client(args) -> None:
 
     if args.liked_songs:
         for song in get_saved_tracks():
-            if not song[TRACK][NAME]:
+            if not song[TRACK][NAME] or not song[TRACK][ID]:
                 Printer.print(PrintChannel.SKIPS, '###   SKIPPING:  SONG DOES NOT EXIST ON SPOTIFY ANYMORE   ###' + "\n")
             else:
                 download_track('liked', song[TRACK][ID])
@@ -85,10 +85,17 @@ def download_from_urls(urls: list[str]) -> bool:
             enum = 1
             char_num = len(str(len(playlist_songs)))
             for song in playlist_songs:
-                if not song[TRACK][NAME]:
+                if not song[TRACK][NAME] or not song[TRACK][ID]:
                     Printer.print(PrintChannel.SKIPS, '###   SKIPPING:  SONG DOES NOT EXIST ON SPOTIFY ANYMORE   ###' + "\n")
                 else:
-                    download_track('playlist', song[TRACK][ID], extra_keys={'playlist': name, 'playlist_num': str(enum).zfill(char_num)})
+                    download_track('playlist', song[TRACK][ID], extra_keys=
+                    {
+                        'playlist_song_name': song[TRACK][NAME],
+                        'playlist': name,
+                        'playlist_num': str(enum).zfill(char_num),
+                        'playlist_id': playlist_id,
+                        'playlist_track_id': song[TRACK][ID]
+                    })
                     enum += 1
         elif episode_id is not None:
             download = True

@@ -86,16 +86,18 @@ class ZSpotify:
         from termoutput import Printer, PrintChannel                
         headers = cls.get_auth_header()
         response = requests.get(url, headers=headers)
-        responseText = response.text
-        responseJson = response.json()
+        responsetext = response.text
+        responsejson = response.json()
         
-        if 'error' in responseJson and tryCount < 5:
-            
-            Printer.Print(PrintChannel.API_ERROR, f"Spotify API Error ({responseJson['error']['status']}): {responseJson['error']['message']}")            
-            time.sleep(5)
-            return cls.invoke_url(url, tryCount + 1)
-                
-        return responseText, responseJson
+        if 'error' in responsejson:
+            if tryCount < 5:
+                Printer.print(PrintChannel.WARNINGS, f"Spotify API Error (try {tryCount}) ({responsejson['error']['status']}): {responsejson['error']['message']}")
+                time.sleep(5)
+                return cls.invoke_url(url, tryCount + 1)
+
+            Printer.print(PrintChannel.API_ERRORS, f"Spotify API Error ({responsejson['error']['status']}): {responsejson['error']['message']}")
+
+        return responsetext, responsejson
 
     @classmethod
     def check_premium(cls) -> bool:
