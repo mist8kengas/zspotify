@@ -31,12 +31,14 @@ MD_ALLGENRES = 'MD_ALLGENRES'
 MD_GENREDELIMITER = 'MD_GENREDELIMITER'
 PRINT_PROGRESS_INFO = 'PRINT_PROGRESS_INFO'
 PRINT_WARNINGS = 'PRINT_WARNINGS'
+RETRY_ATTEMPTS = 'RETRY_ATTEMPTS'
 
 CONFIG_VALUES = {
     ROOT_PATH:                  { 'default': '../ZSpotify Music/',    'type': str,  'arg': '--root-path'                  },
     ROOT_PODCAST_PATH:          { 'default': '../ZSpotify Podcasts/', 'type': str,  'arg': '--root-podcast-path'          },
     SKIP_EXISTING_FILES:        { 'default': 'True',                  'type': bool, 'arg': '--skip-existing-files'        },
     SKIP_PREVIOUSLY_DOWNLOADED: { 'default': 'False',                 'type': bool, 'arg': '--skip-previously-downloaded' },
+    RETRY_ATTEMPTS:             { 'default': '5',                     'type': int,  'arg': '--retry-attemps'              },
     DOWNLOAD_FORMAT:            { 'default': 'ogg',                   'type': str,  'arg': '--download-format'            },
     FORCE_PREMIUM:              { 'default': 'False',                 'type': bool, 'arg': '--force-premium'              },
     ANTI_BAN_WAIT_TIME:         { 'default': '1',                     'type': int,  'arg': '--anti-ban-wait-time'         },
@@ -49,7 +51,7 @@ CONFIG_VALUES = {
     SONG_ARCHIVE:               { 'default': '.song_archive',         'type': str,  'arg': '--song-archive'               },
     CREDENTIALS_LOCATION:       { 'default': 'credentials.json',      'type': str,  'arg': '--credentials-location'       },
     OUTPUT:                     { 'default': '',                      'type': str,  'arg': '--output'                     },
-    PRINT_SPLASH:               { 'default': 'True',                  'type': bool, 'arg': '--print-splash'               },
+    PRINT_SPLASH:               { 'default': 'False',                 'type': bool, 'arg': '--print-splash'               },
     PRINT_SKIPS:                { 'default': 'True',                  'type': bool, 'arg': '--print-skips'                },
     PRINT_DOWNLOAD_PROGRESS:    { 'default': 'True',                  'type': bool, 'arg': '--print-download-progress'    },
     PRINT_ERRORS:               { 'default': 'True',                  'type': bool, 'arg': '--print-errors'               },
@@ -206,6 +208,10 @@ class Config:
     @classmethod
     def get_allGenres(cls) -> bool:
         return cls.get(MD_ALLGENRES)
+
+    @classmethod
+    def get_print_splash(cls) -> bool:
+        return cls.get(PRINT_SPLASH)
 
     @classmethod
     def get_allGenresDelimiter(cls) -> bool:

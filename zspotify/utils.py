@@ -280,3 +280,5 @@ def fmt_seconds(secs: float) -> str:
         return f'{m}'.zfill(2) + ':' + f'{s}'.zfill(2)
     else:
         return f'{h}'.zfill(2) + ':' + f'{m}'.zfill(2) + ':' + f'{s}'.zfill(2)
+
+

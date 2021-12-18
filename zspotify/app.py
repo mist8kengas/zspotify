@@ -19,7 +19,8 @@ def client(args) -> None:
     """ Connects to spotify to perform query's and get songs to download """
     ZSpotify(args)
 
-    Printer.print(PrintChannel.SPLASH, splash())
+    if ZSpotify.CONFIG.get_print_splash():
+        Printer.print(PrintChannel.SPLASH, splash())
 
     if ZSpotify.check_premium():
         Printer.print(PrintChannel.SPLASH, '[ DETECTED PREMIUM ACCOUNT - USING VERY_HIGH QUALITY ]\n\n')

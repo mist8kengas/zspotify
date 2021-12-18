@@ -1,22 +1,29 @@
 import os
+import time
 from typing import Optional, Tuple
 
 from librespot.metadata import EpisodeId
 
-from const import (ERROR, ID, ITEMS, NAME, SHOW)
+from const import ERROR, ID, ITEMS, NAME, SHOW, DURATION_MS
 from termoutput import PrintChannel, Printer
 from utils import create_download_directory, fix_filename
 from zspotify import ZSpotify
+from loader import Loader
+
 
 EPISODE_INFO_URL = 'https://api.spotify.com/v1/episodes'
 SHOWS_URL = 'https://api.spotify.com/v1/shows'
 
 
 def get_episode_info(episode_id_str) -> Tuple[Optional[str], Optional[str]]:
-    (raw, info) = ZSpotify.invoke_url(f'{EPISODE_INFO_URL}/{episode_id_str}')
+    with Loader(PrintChannel.PROGRESS_INFO, "Fetching episode information..."):
+        (raw, info) = ZSpotify.invoke_url(f'{EPISODE_INFO_URL}/{episode_id_str}')
+    if not info:
+        Printer.print(PrintChannel.ERRORS, "###   INVALID EPISODE ID   ###")
+    duration_ms = info[DURATION_MS]
     if ERROR in info:
         return None, None
-    return fix_filename(info[SHOW][NAME]), fix_filename(info[NAME])
+    return fix_filename(info[SHOW][NAME]), duration_ms,  fix_filename(info[NAME])
 
 
 def get_show_episodes(show_id_str) -> list:
@@ -24,14 +31,15 @@ def get_show_episodes(show_id_str) -> list:
     offset = 0
     limit = 50
 
-    while True:
-        resp = ZSpotify.invoke_url_with_params(
-            f'{SHOWS_URL}/{show_id_str}/episodes', limit=limit, offset=offset)
-        offset += limit
-        for episode in resp[ITEMS]:
-            episodes.append(episode[ID])
-        if len(resp[ITEMS]) < limit:
-            break
+    with Loader(PrintChannel.PROGRESS_INFO, "Fetching episodes..."):
+        while True:
+            resp = ZSpotify.invoke_url_with_params(
+                f'{SHOWS_URL}/{show_id_str}/episodes', limit=limit, offset=offset)
+            offset += limit
+            for episode in resp[ITEMS]:
+                episodes.append(episode[ID])
+            if len(resp[ITEMS]) < limit:
+                break
 
     return episodes
 
@@ -64,12 +72,14 @@ def download_podcast_directly(url, filename):
 
 
 def download_episode(episode_id) -> None:
-    podcast_name, episode_name = get_episode_info(episode_id)
-
+    podcast_name, duration_ms, episode_name = get_episode_info(episode_id)
     extra_paths = podcast_name + '/'
+    prepare_download_loader = Loader(PrintChannel.PROGRESS_INFO, "Preparing download...")
+    prepare_download_loader.start()
 
     if podcast_name is None:
         Printer.print(PrintChannel.SKIPS, '###   SKIPPING: (EPISODE NOT FOUND)   ###')
+        prepare_download_loader.stop()
     else:
         filename = podcast_name + ' - ' + episode_name
 
@@ -94,21 +104,31 @@ def download_episode(episode_id) -> None:
                 and ZSpotify.CONFIG.get_skip_existing_files()
             ):
                 Printer.print(PrintChannel.SKIPS, "\n###   SKIPPING: " + podcast_name + " - " + episode_name + " (EPISODE ALREADY EXISTS)   ###")
+                prepare_download_loader.stop()
                 return
 
+            prepare_download_loader.stop()
+            time_start = time.time()
+            downloaded = 0
             with open(filepath, 'wb') as file, Printer.progress(
                 desc=filename,
                 total=total_size,
                 unit='B',
                 unit_scale=True,
                 unit_divisor=1024
-            ) as bar:
+            ) as p_bar:
+                prepare_download_loader.stop()
                 for _ in range(int(total_size / ZSpotify.CONFIG.get_chunk_size()) + 1):
-                    bar.update(file.write(
-                        stream.input_stream.stream().read(ZSpotify.CONFIG.get_chunk_size())))
+                    data = stream.input_stream.stream().read(ZSpotify.CONFIG.get_chunk_size())
+                    p_bar.update(file.write(data))
+                    downloaded += len(data)
+                    if ZSpotify.CONFIG.get_download_real_time():
+                        delta_real = time.time() - time_start
+                        delta_want = (downloaded / total_size) * (duration_ms/1000)
+                        if delta_want > delta_real:
+                            time.sleep(delta_want - delta_real)
         else:
             filepath = os.path.join(download_directory, f"{filename}.mp3")
             download_podcast_directly(direct_download_url, filepath)
 
-        # convert_audio_format(ROOT_PODCAST_PATH +
-        #                     extra_paths + filename + '.ogg')
+    prepare_download_loader.stop()

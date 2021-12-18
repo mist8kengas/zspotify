@@ -15,8 +15,8 @@ from utils import fix_filename, set_audio_tags, set_music_thumbnail, create_down
     get_directory_song_ids, add_to_directory_song_ids, get_previously_downloaded, add_to_archive, fmt_seconds
 from zspotify import ZSpotify
 import traceback
-
 from loader import Loader
+
 
 def get_saved_tracks() -> list:
     """ Returns user's saved tracks """
@@ -189,7 +189,7 @@ def download_track(mode: str, track_id: str, extra_keys=None, disable_progressba
                             unit_divisor=1024,
                             disable=disable_progressbar
                     ) as p_bar:
-                        for chunk in range(int(total_size / ZSpotify.CONFIG.get_chunk_size()) + 1):
+                        for _ in range(int(total_size / ZSpotify.CONFIG.get_chunk_size()) + 1):
                             data = stream.input_stream.stream().read(ZSpotify.CONFIG.get_chunk_size())
                             p_bar.update(file.write(data))
                             downloaded += len(data)
