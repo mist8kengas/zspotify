@@ -129,7 +129,7 @@ def set_audio_tags(filename, artists, genres, name, album_name, release_year, di
     tags = music_tag.load_file(filename)
     tags[ALBUMARTIST] = artists[0]
     tags[ARTIST] = conv_artist_format(artists)
-    tags[GENRE] = genres[0] if not ZSpotify.CONFIG.get_allGenres() else ZSpotify.CONFIG.get_allGenresDelimiter().join(genres)
+    tags[GENRE] = genres[0] if not ZSpotify.CONFIG.get_all_genres() else ZSpotify.CONFIG.get_all_genres_delimiter().join(genres)
     tags[TRACKTITLE] = name
     tags[ALBUM] = album_name
     tags[YEAR] = release_year
@@ -273,9 +273,9 @@ def fmt_seconds(secs: float) -> str:
     h = math.floor(val)
 
     if h == 0 and m == 0 and s == 0:
-        return "0"
+        return "0s"
     elif h == 0 and m == 0:
-        return f'{s}'.zfill(2)
+        return f'{s}s'.zfill(2)
     elif h == 0:
         return f'{m}'.zfill(2) + ':' + f'{s}'.zfill(2)
     else:

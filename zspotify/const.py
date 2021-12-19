@@ -34,6 +34,8 @@ ITEMS = 'items'
 
 NAME = 'name'
 
+HREF = 'href'
+
 ID = 'id'
 
 URL = 'url'

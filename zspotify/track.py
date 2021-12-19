@@ -9,7 +9,7 @@ from librespot.metadata import TrackId
 from ffmpy import FFmpeg
 
 from const import TRACKS, ALBUM, GENRES, NAME, ITEMS, DISC_NUMBER, TRACK_NUMBER, IS_PLAYABLE, ARTISTS, IMAGES, URL, \
-    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, TRACK_STATS_URL, CODEC_MAP, EXT_MAP, DURATION_MS
+    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, TRACK_STATS_URL, CODEC_MAP, EXT_MAP, DURATION_MS, HREF
 from termoutput import Printer, PrintChannel
 from utils import fix_filename, set_audio_tags, set_music_thumbnail, create_download_directory, \
     get_directory_song_ids, add_to_directory_song_ids, get_previously_downloaded, add_to_archive, fmt_seconds
@@ -35,7 +35,7 @@ def get_saved_tracks() -> list:
     return songs
 
 
-def get_song_info(song_id) -> Tuple[List[str], List[str], str, str, Any, Any, Any, Any, Any, Any, int]:
+def get_song_info(song_id) -> Tuple[List[str], List[Any], str, str, Any, Any, Any, Any, Any, Any, int]:
     """ Retrieves metadata for downloaded songs """
     with Loader(PrintChannel.PROGRESS_INFO, "Fetching track information..."):
         (raw, info) = ZSpotify.invoke_url(f'{TRACKS_URL}?ids={song_id}&market=from_token')
@@ -45,21 +45,8 @@ def get_song_info(song_id) -> Tuple[List[str], List[str], str, str, Any, Any, An
 
     try:
         artists = []
-        genres = []
         for data in info[TRACKS][0][ARTISTS]:
             artists.append(data[NAME])
-            # query artist genres via href, which will be the api url
-            with Loader(PrintChannel.PROGRESS_INFO, "Fetching artist information..."):
-                (raw, artistInfo) = ZSpotify.invoke_url(f'{data["href"]}')
-            if ZSpotify.CONFIG.get_allGenres() and len(artistInfo[GENRES]) > 0:
-                for genre in artistInfo[GENRES]:
-                    genres.append(genre)
-            elif len(artistInfo[GENRES]) > 0:
-                genres.append(artistInfo[GENRES][0])
-
-        if len(genres) == 0:
-            Printer.print(PrintChannel.WARNINGS, '###    No Genres found for song ' + info[TRACKS][0][NAME])
-            genres.append('')
 
         album_name = info[TRACKS][0][ALBUM][NAME]
         name = info[TRACKS][0][NAME]
@@ -71,9 +58,32 @@ def get_song_info(song_id) -> Tuple[List[str], List[str], str, str, Any, Any, An
         is_playable = info[TRACKS][0][IS_PLAYABLE]
         duration_ms = info[TRACKS][0][DURATION_MS]
 
-        return artists, genres, album_name, name, image_url, release_year, disc_number, track_number, scraped_song_id, is_playable, duration_ms
+        return artists, info[TRACKS][0][ARTISTS], album_name, name, image_url, release_year, disc_number, track_number, scraped_song_id, is_playable, duration_ms
     except Exception as e:
         raise ValueError(f'Failed to parse TRACKS_URL response: {str(e)}\n{raw}')
+
+
+def get_song_genres(rawartists: List[str], track_name: str) -> List[str]:
+
+    try:
+        genres = []
+        for data in rawartists:
+            # query artist genres via href, which will be the api url
+            with Loader(PrintChannel.PROGRESS_INFO, "Fetching artist information..."):
+                (raw, artistInfo) = ZSpotify.invoke_url(f'{data[HREF]}')
+            if ZSpotify.CONFIG.get_all_genres() and len(artistInfo[GENRES]) > 0:
+                for genre in artistInfo[GENRES]:
+                    genres.append(genre)
+            elif len(artistInfo[GENRES]) > 0:
+                genres.append(artistInfo[GENRES][0])
+
+        if len(genres) == 0:
+            Printer.print(PrintChannel.WARNINGS, '###    No Genres found for song ' + track_name)
+            genres.append('')
+
+        return genres
+    except Exception as e:
+        raise ValueError(f'Failed to parse GENRES response: {str(e)}\n{raw}')
 
 
 def get_song_duration(song_id: str) -> float:
@@ -106,7 +116,7 @@ def download_track(mode: str, track_id: str, extra_keys=None, disable_progressba
     try:
         output_template = ZSpotify.CONFIG.get_output(mode)
 
-        (artists, genres, album_name, name, image_url, release_year, disc_number,
+        (artists, raw_artists, album_name, name, image_url, release_year, disc_number,
          track_number, scraped_song_id, is_playable, duration_ms) = get_song_info(track_id)
 
         song_name = fix_filename(artists[0]) + ' - ' + fix_filename(name)
@@ -200,6 +210,8 @@ def download_track(mode: str, track_id: str, extra_keys=None, disable_progressba
                                     time.sleep(delta_want - delta_real)
 
                     time_downloaded = time.time()
+
+                    genres = get_song_genres(raw_artists, name)
 
                     convert_audio_format(filename_temp)
                     set_audio_tags(filename_temp, artists, genres, name, album_name, release_year, disc_number, track_number)

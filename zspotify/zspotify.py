@@ -82,7 +82,7 @@ class ZSpotify:
         responsejson = response.json()
 
         if 'error' in responsejson:
-            if tryCount < (cls.CONFIG.retry_attemps - 1):
+            if tryCount < (cls.CONFIG.get_retry_attempts() - 1):
                 Printer.print(PrintChannel.WARNINGS, f"Spotify API Error (try {tryCount + 1}) ({responsejson['error']['status']}): {responsejson['error']['message']}")
                 time.sleep(5)
                 return cls.invoke_url(url, tryCount + 1)

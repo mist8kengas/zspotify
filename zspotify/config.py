@@ -70,6 +70,7 @@ OUTPUT_DEFAULT_LIKED_SONGS = 'Liked Songs/{artist} - {song_name}.{ext}'
 OUTPUT_DEFAULT_SINGLE = '{artist} - {song_name}.{ext}'
 OUTPUT_DEFAULT_ALBUM = '{artist}/{album}/{album_num} - {artist} - {song_name}.{ext}'
 
+
 class Config:
     Values = {}
 
@@ -206,15 +207,11 @@ class Config:
         return os.path.join(cls.get_root_path(), cls.get(TEMP_DOWNLOAD_DIR))
     
     @classmethod
-    def get_allGenres(cls) -> bool:
+    def get_all_genres(cls) -> bool:
         return cls.get(MD_ALLGENRES)
 
     @classmethod
-    def get_print_splash(cls) -> bool:
-        return cls.get(PRINT_SPLASH)
-
-    @classmethod
-    def get_allGenresDelimiter(cls) -> bool:
+    def get_all_genres_delimiter(cls) -> bool:
         return cls.get(MD_GENREDELIMITER)
     
     @classmethod
@@ -248,3 +245,7 @@ class Config:
                 return os.path.join(split[0], 'Disc {disc_number}', split[0])
             return OUTPUT_DEFAULT_ALBUM
         raise ValueError()
+
+    @classmethod
+    def get_retry_attempts(cls) -> int:
+        return cls.get(RETRY_ATTEMPTS)
