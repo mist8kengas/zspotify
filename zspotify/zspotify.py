@@ -30,7 +30,8 @@ class ZSpotify:
             try:
                 cls.SESSION = Session.Builder().stored_file(cred_location).create()
                 return
-            except RuntimeError:
+            except RuntimeError as e:
+                print(f"RuntimeError: {e}")
                 pass
         while True:
             user_name = ''
